@@ -35,7 +35,7 @@ def ChatGPT_single_request(prompt, time_sleep_second=0.1):
     temp_sleep(time_sleep_second)
 
     start_time = time.time()
-    model_name = "gpt-35-turbo"
+    model_name = "gpt-3.5-turbo"
 
     if key_type == 'azure':
         completion = openai.ChatCompletion.create(
