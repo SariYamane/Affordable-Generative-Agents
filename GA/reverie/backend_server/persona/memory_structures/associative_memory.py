@@ -30,7 +30,8 @@ class ConceptNode:
         self.type = node_type  # thought / event / chat
         self.depth = depth
 
-        self.created = created
+        self.created = datetime.datetime.utcnow()
+        self.created_ts = self.created.timestamp()
         self.expiration = expiration
         self.last_accessed = self.created
 

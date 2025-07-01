@@ -69,3 +69,6 @@ zipp==3.6.0
 numpy
 scipy
 scikit-learn
+
+rank_bm25
+sentence-transformers

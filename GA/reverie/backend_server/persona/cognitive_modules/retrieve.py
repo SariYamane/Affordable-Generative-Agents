@@ -14,6 +14,16 @@ from persona.prompt_template.gpt_structure import *
 from numpy import dot
 from numpy.linalg import norm
 
+from datetime import datetime, timezone
+
+from rank_bm25 import BM25Okapi              # pip install rank_bm25
+from collections import defaultdict
+
+from score_core.retriever import retrieve as hybrid_search
+from score_core import models
+
+import uuid
+
 
 def retrieve(persona, perceived):
     """
@@ -217,6 +227,7 @@ def new_retrieve(persona, focal_points, n_count=20):
     persona = <persona> object 
     focal_points = ["How are you?", "Jane is swimming in the pond"]
   """
+    
     # <retrieved> is the main dictionary that we are returning
     retrieved = dict()
     for focal_pt in focal_points:
@@ -239,6 +250,10 @@ def new_retrieve(persona, focal_points, n_count=20):
         nodes = filter_nodes
         nodes = sorted(nodes, key=lambda x: x[0])
         nodes = [i for created, i in nodes]
+        
+        texts = [n.description for n in nodes]
+        tokenized = [t.split() for t in texts]          # 超簡易トークン化
+        bm25 = BM25Okapi(tokenized)
 
         # Calculating the component dictionaries and normalizing them.
         recency_out = extract_recency(persona, nodes)
@@ -247,6 +262,46 @@ def new_retrieve(persona, focal_points, n_count=20):
         importance_out = normalize_dict_floats(importance_out, 0, 1)
         relevance_out = extract_relevance(persona, nodes, focal_pt)
         relevance_out = normalize_dict_floats(relevance_out, 0, 1)
+        
+        # BM25 スコアも 0-1 に正規化
+        bm25_scores = {i: s for i, s in enumerate(bm25.get_scores(focal_pt.split()))}
+        bm25_norm   = normalize_dict_floats(bm25_scores, 0, 1)
+
+        # Reciprocal Rank Fusion (RRF) で 2 つを統合
+        cand_mem = [
+            models.MemoryEntry(
+              uuid = str(uuid.uuid4()),
+              who = persona.name,
+              what = n.embedding_key,
+              content = n.description,
+              timestamp = getattr(n, "created", datetime.utcnow()),
+              importance = n.poignancy or 5
+            )
+            for n in nodes
+        ]
+        
+        hybrid_list = hybrid_search(
+            query     = focal_pt,
+            memories  = cand_mem,
+            k         = len(cand_mem)
+        )
+        
+        desc_to_id = {n.description: n.node_id for n in nodes}
+        
+        hybrid_out = {}
+        for rank, mem in enumerate(hybrid_list, start=1):
+            # MemoryEntry.content と Node.description が一致する前提で逆引き
+            node_id = desc_to_id.get(mem.content)
+            if node_id is None:
+              continue
+            hybrid_out[node_id] = 1 / rank      # シンプルに 1/rank をスコアに
+        
+        hybrid_norm = normalize_dict_floats(hybrid_out, 0, 1)  # score_core 結果を 0-1
+        fused = defaultdict(float)
+        for d in (hybrid_norm, bm25_norm):          # ここで2系列を融合
+            for nid in sorted(d, key=d.get, reverse=True):
+                rank = list(sorted(d, key=d.get, reverse=True)).index(nid) + 1
+                fused[nid] += 1 / (60 + rank)
 
         # Computing the final scores that combines the component values.
         # Note to self: test out different weights. [1, 1, 1] tends to work
@@ -258,7 +313,7 @@ def new_retrieve(persona, focal_points, n_count=20):
         master_out = dict()
         for key in recency_out.keys():
             master_out[key] = (persona.scratch.recency_w * recency_out[key] * gw[0]
-                               + persona.scratch.relevance_w * relevance_out[key] * gw[1]
+                               + persona.scratch.relevance_w * fused[key] * gw[1]
                                + persona.scratch.importance_w * importance_out[key] * gw[2])
 
         master_out = top_highest_x_values(master_out, len(master_out.keys()))
