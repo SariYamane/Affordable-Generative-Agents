@@ -15,7 +15,6 @@ import inspect
 from metrics import metrics
 from pool import get_embedding_pool, update_embedding_pool
 
-
 openai.api_key = openai_api_key
 
 
