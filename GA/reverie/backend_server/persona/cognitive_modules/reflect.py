@@ -7,7 +7,7 @@ Description: This defines the "Reflect" module for generative agents.
 import sys
 sys.path.append('../../')
 
-import datetime
+from datetime import datetime, timedelta
 import random
 
 from numpy import dot
@@ -122,7 +122,7 @@ def run_reflect(persona):
     thoughts = generate_insights_and_evidence(persona, nodes, 5)
     for thought, evidence in thoughts.items(): 
       created = persona.scratch.curr_time
-      expiration = persona.scratch.curr_time + datetime.timedelta(days=30)
+      expiration = persona.scratch.curr_time + timedelta(days=30)
       s, p, o = generate_action_event_triple(thought, persona)
       keywords = set([s, p, o])
       thought_poignancy = generate_poig_score(persona, "thought", thought)
@@ -189,8 +189,8 @@ def reflect(persona):
 
   # print (persona.scratch.name, "al;sdhfjlsad", persona.scratch.chatting_end_time)
   if persona.scratch.chatting_end_time: 
-    # print("DEBUG", persona.scratch.curr_time + datetime.timedelta(0,10))
-    if persona.scratch.curr_time + datetime.timedelta(0,10) == persona.scratch.chatting_end_time: 
+    # print("DEBUG", persona.scratch.curr_time + timedelta(0,10))
+    if persona.scratch.curr_time + timedelta(0,10) == persona.scratch.chatting_end_time: 
       # print ("KABOOOOOMMMMMMM")
       all_utt = ""
       if persona.scratch.chat: 
@@ -218,7 +218,7 @@ def reflect(persona):
       planning_thought = f"For {persona.scratch.name}'s planning: {planning_thought}"
 
       created = persona.scratch.curr_time
-      expiration = persona.scratch.curr_time + datetime.timedelta(days=30)
+      expiration = persona.scratch.curr_time + timedelta(days=30)
       s, p, o = generate_action_event_triple(planning_thought, persona)
       keywords = set([s, p, o])
       thought_poignancy = generate_poig_score(persona, "thought", planning_thought)
@@ -234,7 +234,7 @@ def reflect(persona):
       memo_thought = f"{persona.scratch.name} {memo_thought}"
 
       created = persona.scratch.curr_time
-      expiration = persona.scratch.curr_time + datetime.timedelta(days=30)
+      expiration = persona.scratch.curr_time + timedelta(days=30)
       s, p, o = generate_action_event_triple(memo_thought, persona)
       keywords = set([s, p, o])
       thought_poignancy = generate_poig_score(persona, "thought", memo_thought)
