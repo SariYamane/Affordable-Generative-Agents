@@ -383,9 +383,8 @@ class ReverieServer:
                         # <description> is a string description of the movement. e.g.,
                         #   writing her next novel (editing her novel)
                         #   @ double studio:double studio:common room:sofa
-                        next_tile, pronunciatio, description = persona.move(
-                            self.maze, self.personas, self.personas_tile[persona_name],
-                            self.curr_time)
+                        next_tile, pronunciatio, description, cache_hit = persona.move(
+                            self.maze, self.personas, self.personas_tile[persona_name], self.curr_time)
                         movements["persona"][persona_name] = {}
                         movements["persona"][persona_name]["movement"] = next_tile
                         backend_data["persona"][persona_name] = next_tile
@@ -393,6 +392,7 @@ class ReverieServer:
                         movements["persona"][persona_name]["description"] = description
                         movements["persona"][persona_name]["chat"] = (persona
                                                                       .scratch.chat)
+                        movements["persona"][persona_name]["cache_hit"] = cache_hit
 
                     # Include the meta information about the current stage in the
                     # movements dictionary.

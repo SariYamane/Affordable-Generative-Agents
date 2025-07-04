@@ -1061,7 +1061,8 @@ def plan(persona, maze, personas, new_day, retrieved):
         _long_term_planning(persona, new_day)
 
     # PART 2: If the current action has expired, we want to create a new plan.
-    if persona.scratch.act_check_finished():
+    expired = persona.scratch.act_check_finished()
+    if expired:
         _determine_action(persona, maze)
 
     # PART 3: If you perceived an event that needs to be responded to (saw
@@ -1106,8 +1107,10 @@ def plan(persona, maze, personas, new_day, retrieved):
     # buffer that makes the persona wait from talking to the same target
     # immediately after chatting once. We keep track of the buffer value here.
     curr_persona_chat_buffer = persona.scratch.chatting_with_buffer
+
     for persona_name, buffer_count in curr_persona_chat_buffer.items():
         if persona_name != persona.scratch.chatting_with:
             persona.scratch.chatting_with_buffer[persona_name] -= 1
 
-    return persona.scratch.act_address
+    cache_hit = not expired
+    return persona.scratch.act_address, cache_hit

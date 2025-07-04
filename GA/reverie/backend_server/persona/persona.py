@@ -219,7 +219,11 @@ class Persona:
     # Main cognitive sequence begins here. 
     perceived = self.perceive(maze)
     retrieved = self.retrieve(perceived)
-    plan = self.plan(maze, personas, new_day, retrieved)
+    _plan_ret = self.plan(maze, personas, new_day, retrieved)
+    if isinstance(_plan_ret, tuple):
+        plan, cache_hit = _plan_ret       # 新仕様
+    else:
+        plan, cache_hit = _plan_ret, False  # 旧仕様 → ヒット判定なし
     self.reflect()
 
     # <execution> is a triple set that contains the following components: 
@@ -228,7 +232,8 @@ class Persona:
     # <description> is a string description of the movement. e.g., 
     #   writing her next novel (editing her novel) 
     #   @ double studio:double studio:common room:sofa
-    return self.execute(maze, personas, plan)
+    next_tile, pronunciatio, description = self.execute(maze, personas, plan)
+    return next_tile, pronunciatio, description, cache_hit
 
 
   def open_convo_session(self, convo_mode): 
